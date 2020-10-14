@@ -27,7 +27,6 @@ def parse_args():
      parser.add_argument("--input-file", required=True, help="CSV with columns <tweet_id>,<tweet>,<label>")
      parser.add_argument("--output-file", required=True, type=str)
      parser.add_argument("--keywords-file", type=str)
-     parser.add_argument("--learning-rate", default=0.01, type=float)
      parser.add_argument("--seed", type=int, help="Use this flag to specify a manual seed for train/test split")
      return parser.parse_args()
 
@@ -45,6 +44,8 @@ if __name__ == "__main__":
 
      # Read in Tweets and labels
      tweets_df = pd.read_csv(args.input_file)
+     print(tweets_df[pd.isnull(tweets_df.text)])
+     quit()
      
      if args.keywords_file:
          with open(args.keywords_file, 'r') as f:
