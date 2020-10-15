@@ -1,5 +1,5 @@
 """
-Linear event-tweet filtration baseline model. Uses keyword frequency 
+Linear event-tweet filtration baseline model. Uses token count frequency.
  
 Author: Justin Sech, jsech1@jhu.edu
 """
@@ -16,6 +16,7 @@ from sklearn.model_selection import cross_validate
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.preprocessing import StandardScaler
 
 from littlebird import BERTweetTokenizer
 
@@ -25,18 +26,15 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 def parse_args():
      parser = argparse.ArgumentParser()
      parser.add_argument("--input-file", required=True, help="CSV with columns <tweet_id>,<tweet>,<label>")
-     parser.add_argument("--output-file", required=True, type=str)
+     parser.add_argument("--save-model-path", type=str, required=True,
+                         help="Location to save model. Should be a pickle file (.pkl)")
+     parser.add_argument("--results-file", type=str, required=True,
+                         help="Location to results from cross-validation. Should be a pickle file (.pkl)")
      parser.add_argument("--keywords-file", type=str)
+     parser.add_argument("--scale-data", action="store_true")
+     parser.add_argument("--max-iter", type=int, default=100)
      parser.add_argument("--seed", type=int, help="Use this flag to specify a manual seed for train/test split")
      return parser.parse_args()
-
-
-def countKeywords(text, keywords):
-     key_count = dict.fromkeys(keywords,0)
-     for word in text.lower().split():
-          if word in key_count:
-               key_count[word] += 1
-     return list(key_count.values())
 
 
 if __name__ == "__main__":
@@ -44,8 +42,6 @@ if __name__ == "__main__":
 
      # Read in Tweets and labels
      tweets_df = pd.read_csv(args.input_file)
-     print(tweets_df[pd.isnull(tweets_df.text)])
-     quit()
      
      if args.keywords_file:
          with open(args.keywords_file, 'r') as f:
@@ -61,13 +57,19 @@ if __name__ == "__main__":
 
      # Initialize vectorizer for ngram features
      vectorizer = CountVectorizer(vocabulary=keywords, tokenizer=tokenizer.tokenize)
+     pipeline = [("ngram", vectorizer)]
+     
+     if args.scale_data:
+         # Scale data to help convergence
+         scaler = StandardScaler(with_mean=False)
+         pipeline.append(("scaler", scaler))
+
+     # Model
+     model = LogisticRegression(max_iter=args.max_iter)
+     pipeline.append(("model", model))
      
      # Make pipeline for model
-     model = LogisticRegression()
-     clf = Pipeline([
-        ("ngram", vectorizer),
-        ("model", model)
-     ])
+     clf = Pipeline(pipeline)
 
      scoring = {'accuracy' : make_scorer(accuracy_score),
                 'precision' : make_scorer(precision_score),
@@ -79,15 +81,35 @@ if __name__ == "__main__":
      skf = StratifiedKFold(n_splits=5, random_state=args.seed, shuffle=True)
      scores = cross_validate(clf, X, y, cv=skf, scoring=scoring)
 
-     # Log results
-     logging.info(f"Accuracy:  {np.mean(scores['test_accuracy']):.3}  std: {np.std(scores['test_accuracy']):.3}")
-     logging.info(f"Precision: {np.mean(scores['test_precision']):.3}  std: {np.std(scores['test_precision']):.3}")
-     logging.info(f"Recall:    {np.mean(scores['test_recall']):.3}  std: {np.std(scores['test_recall']):.3}")
-     logging.info(f"F1:        {np.mean(scores['test_f1_score']):.3}  std: {np.std(scores['test_f1_score']):.3}")
+     # Save and log results
+     results = {
+          "accuracy":  {
+               "avg": np.mean(scores['test_accuracy']),
+               "std": np.std(scores['test_accuracy'])
+          },
+          "precision": {
+               "avg": np.mean(scores['test_precision']),
+               "std": np.std(scores['test_precision'])
+          },
+          "recall": {
+               "avg": np.mean(scores['test_recall']),
+               "std": np.std(scores['test_recall'])
+          },
+          "f1": {
+               "avg": np.mean(scores['test_f1_score']),
+               "std": np.std(scores['test_f1_score'])
+          }
+     }
+     with open(args.results_file, 'wb') as out:
+          pickle.dump(results, out)
+     results_str = "\n".join([f"{metric}: {d['avg']:.3} ({d['std']:.3})" for metric, d in results.items()])
+     logging.info(results_str)
 
      # Train model on entire dataset
      clf.fit(X, y)
+     logging.info(f"Fit data in {clf['model'].n_iter_} iterations")
+
      # Save model
-     with open(args.output_file, 'wb') as out:
+     with open(args.save_model_path, 'wb') as out:
           pickle.dump(clf, out)
-     logging.info(f"Model saved to {args.output_file}")
+     logging.info(f"Model saved to {args.save_model_path}")
