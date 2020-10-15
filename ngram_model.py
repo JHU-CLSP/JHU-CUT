@@ -53,7 +53,7 @@ if __name__ == "__main__":
      tokenizer = BERTweetTokenizer()
      X = tweets_df["text"].values
      y = tweets_df["label"].values
-     logging.info(f"Loaded data")
+     logging.info(f"Loaded data with {sum(y)/len(y):.2}% positive class.")
 
      # Initialize vectorizer for ngram features
      vectorizer = CountVectorizer(vocabulary=keywords, tokenizer=tokenizer.tokenize)
@@ -107,7 +107,7 @@ if __name__ == "__main__":
 
      # Train model on entire dataset
      clf.fit(X, y)
-     logging.info(f"Fit data in {clf['model'].n_iter_} iterations")
+     logging.info(f"Fit data in {clf['model'].n_iter_} iterations with feature dimensions {len(clf['ngram'].vocabulary_)}")
 
      # Save model
      with open(args.save_model_path, 'wb') as out:
