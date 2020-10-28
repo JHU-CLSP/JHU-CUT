@@ -37,10 +37,7 @@ logging.basicConfig(level=logging.INFO)
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-file", required=True, help="CSV with columns <tweet_id>,<tweet>,<label>")
-    parser.add_argument("--save-model-path",
-                        help="Location to save model. should be torch file (.pt). "
-                             "Only saves when cross-validation option is not used.")
-    parser.add_argument("--results-file", help="Location to results from cross-validation. Should be a pickle file (.pkl)")
+    parser.add_argument("--output-file", required=True, help="Location to save model")
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--cpu", action="store_true", help="Use CPU instead of GPU")
     parser.add_argument("--cross-validate", action="store_true",help="Indicates if you want to cross validate results or train on entire dataset")
@@ -51,7 +48,7 @@ def parse_args():
     parser.add_argument("--batch-size", default=20, type=int, help="Batch size")
     parser.add_argument("--num-epochs", default=100, type=int)
     parser.add_argument("--learning-rate", default=0.01, type=float)
-    parser.add_argument("--seed", default=42, type=int, help="Use this flag to specify a manual seed for train/test split")
+    parser.add_argument("--seed", type=int, help="Use this flag to specify a manual seed for train/test split")
     return parser.parse_args()
 
 
@@ -177,6 +174,7 @@ class Batcher:
 
         # Calculate number of batches
         num_batches = int(np.ceil(len(X) / self.batch_size))
+        print(f"Number of batches: {num_batches}\tNumber of data points: {len(X)}")
         for i in range(num_batches):
             start = i * self.batch_size
             end = start + self.batch_size
@@ -187,38 +185,7 @@ class Batcher:
                 logging.debug(f"Expected batch size of {self.batch_size} but generated batch with {len(batch_X)} item(s) with indices [{start}:{end}].")
             yield batch_X, batch_y
 
-
-def create_BERTweet_features(BERTweetModel, tokenizer, X, device):
-    """Create BERTweet representation of provided input data (tweet text)"""
-    # Get BERTweet representation of tweets
-    # Use an attention mask to hide the padded tokens
-    input_ids, attention_mask, first_subword_positions = tokenizer.batch_encode(X)
-    input_ids = input_ids.to(device)
-    attention_mask = attention_mask.to(device)
-    with torch.no_grad():
-        features = BERTweetModel(
-            input_ids,
-            attention_mask=attention_mask,
-        )[0]  # Only want the embeddings
-    logging.debug(f"{features.size()}\n{features}")
-
-    # Represent Tweets as the average of their subwords (first subword positions only)
-    # Using just the first token gives very bad results
-    avg_features = []
-    for indices, subword_embeddings in zip(first_subword_positions, features):
-        logging.debug(f"""
-indices: {len(indices)}
-embedding {subword_embeddings.size()}
-AVG:{subword_embeddings[indices].size()}
-{torch.mean(subword_embeddings[indices], 0).size()}""")
-        avg_features.append(
-            torch.mean(subword_embeddings[indices], 0)
-        )
-    features = torch.stack(avg_features).to(device)
-    logging.debug(f"Features: {features.size()}")
-    return features
-
-
+        
 if __name__ == "__main__":
     args = parse_args()
 
@@ -260,6 +227,7 @@ if __name__ == "__main__":
         results = {}
         skf = StratifiedKFold(n_splits=5, random_state=args.seed, shuffle=True)
         for fold, (train_index, test_index) in enumerate(skf.split(data, labels)): 
+            logging.info(f"Train label 'yes' count: {np.sum(labels[train_index])}")
             # Initialize model, loss, and optimizer
             model = LogisticRegression().to(device)
             criterion = torch.nn.MSELoss().to(device)
@@ -274,7 +242,27 @@ if __name__ == "__main__":
                 for batch_iter, (X, y) in enumerate(batcher.batchify(train_index)):
                     logging.debug(f"batch_iter: {batch_iter}\tX: {X}\ty: {y}")
                     # Get BERTweet representation of tweets
-                    features = create_BERTweet_features(BERTweetModel, tokenizer, X, device)
+                    # Use an attention mask to hide the padded tokens
+                    input_ids, attention_mask, first_subword_positions = tokenizer.batch_encode(X)
+                    input_ids = input_ids.to(device)
+                    attention_mask = attention_mask.to(device)
+                    with torch.no_grad():
+                        features = BERTweetModel(
+                            input_ids,
+                            attention_mask=attention_mask,
+                            )[0]  # Only want the embeddings
+                    logging.debug(f"{features.size()}\n{features}")
+
+                    # Represent Tweets as the average of their subwords (first subword positions only)
+                    # Using just the first token gives very bad results
+                    avg_features = []
+                    for indices, subword_embeddings in zip(first_subword_positions, features):
+                        logging.debug(f"indices: {len(indices)}\nembedding {subword_embeddings.size()}\nAVG:{subword_embeddings[indices].size()}\n{torch.mean(subword_embeddings[indices], 0).size()}")
+                        avg_features.append(
+                            torch.mean(subword_embeddings[indices], 0)
+                        )
+                    features = torch.stack(avg_features).to(device)
+                    logging.debug(f"Features: {features.size()}")
 
                     # Batch descent
                     model.train()
@@ -289,11 +277,29 @@ if __name__ == "__main__":
                         # End program after first batch for debugging
                         break
 
+
             # After final epoch, test the model
-            # Get BERTweet representation for test data
             test_X = data[test_index]
             test_y = labels[test_index]
-            features = create_BERTweet_features(BERTweetModel, tokenizer, test_X, device)
+
+            # Get BERTweet representation for test data
+            input_ids, attention_mask, first_subword_positions = tokenizer.batch_encode(test_X)
+            input_ids = input_ids.to(device)
+            attention_mask = attention_mask.to(device)
+            with torch.no_grad():
+                test_features = BERTweetModel(
+                    input_ids,
+                    attention_mask=attention_mask)[0]  # Only want the embeddings    
+            # Represent tweets using the CLS token (the first token)
+            #test_features = test_features[:, 0]
+            # Represent Tweets as the average of their subwords (first subword positions only)
+            avg_features = []
+            for indices, subword_embeddings in zip(first_subword_positions, test_features):
+                logging.debug(f"indices: {len(indices)}\nembedding {subword_embeddings.size()}\nAVG:{subword_embeddings[indices].size()}\n{torch.mean(subword_embeddings[indices], 0).size()}")
+                avg_features.append(
+                    torch.mean(subword_embeddings[indices], 0)
+                )
+            test_features = torch.stack(avg_features).to(device)
 
             y_pred = model.predict(test_features).cpu()
             acc = accuracy_score(y_pred, test_y)
@@ -302,9 +308,9 @@ if __name__ == "__main__":
             rec = recall_score(y_pred, test_y)
 
             if args.save_preds:
-                results_df = tweets_df['label'].iloc[test_index].to_frame().reset_index()
+                results_df = tweets_df[['tweet_id', 'label']].iloc[test_index]
                 results_df['predicted'] = y_pred
-                results_df.to_csv("y_preds_bert.csv")
+                results_df.to_csv('/export/b16/justin/minerva/emnlp_submission/y_preds_bert.csv')
 
             logging.info(f"""Results from fold {fold}
             Accuracy: {acc}
@@ -353,19 +359,20 @@ if __name__ == "__main__":
         F1:  {results["f1"]}
         """)
 
+
         # Save models and results
-        with open(args.results_file, 'wb') as f:
-            pickle.dump(results, f)
-        logging.info(f"Results saved to {args.results_file}")
+        with open(args.output_file, 'wb') as out:
+            pickle.dump(results, out)
+        logging.info(f"Results saved to {args.output_file}")
         quit()
 
-    #####
+    # When cross-validate flag not present in params
     # Train final model on entire dataset
-    #####
-    # Initialize model
     model = LogisticRegression().to(device)
     criterion = torch.nn.MSELoss().to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate)
+
+    # Initialize Batcher
     batcher = Batcher(data, labels, args.batch_size)
 
     for epoch in range(args.num_epochs):
@@ -374,7 +381,27 @@ if __name__ == "__main__":
         for batch_iter, (X, y) in enumerate(batcher.batchify(tweets_df.index)):
             logging.debug(f"batch_iter: {batch_iter}\tX: {X}\ty: {y}")
             # Get BERTweet representation of tweets
-            features = create_BERTweet_features(BERTweetModel, tokenizer, X, device)
+            # Use an attention mask to hide the padded tokens
+            input_ids, attention_mask, first_subword_positions = tokenizer.batch_encode(X)
+            input_ids = input_ids.to(device)
+            attention_mask = attention_mask.to(device)
+            with torch.no_grad():
+                features = BERTweetModel(
+                    input_ids,
+                    attention_mask=attention_mask,
+                )[0]  # Only want the embeddings
+            logging.debug(f"{features.size()}\n{features}")
+
+            # Represent Tweets as the average of their subwords (first subword positions only)
+            # Using just the first token gives very bad results
+            avg_features = []
+            for indices, subword_embeddings in zip(first_subword_positions, features):
+                logging.debug(f"indices: {len(indices)}\nembedding {subword_embeddings.size()}\nAVG:{subword_embeddings[indices].size()}\n{torch.mean(subword_embeddings[indices], 0).size()}")
+                avg_features.append(
+                    torch.mean(subword_embeddings[indices], 0)
+                )
+            features = torch.stack(avg_features).to(device)
+            logging.debug(f"Features: {features.size()}")
                 
             # Batch descent
             model.train()
@@ -385,7 +412,10 @@ if __name__ == "__main__":
             loss.backward()
             optimizer.step()
 
+
     # Save model
-    torch.save(model, args.save_model_path)
-    logging.info(f"Model saved to {args.save_model_path}")
+    with open(args.output_file, 'wb') as out:
+        pickle.dump(results, out)
+    logging.info(f"Model saved to {args.output_file}")
+
 
