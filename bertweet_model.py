@@ -293,7 +293,7 @@ if __name__ == "__main__":
             # Get BERTweet representation for test data
             test_X = data[test_index]
             test_y = labels[test_index]
-            features = create_BERTweet_features(BERTweetModel, tokenizer, test_X, device)
+            test_features = create_BERTweet_features(BERTweetModel, tokenizer, test_X, device)
 
             y_pred = model.predict(test_features).cpu()
             acc = accuracy_score(y_pred, test_y)
@@ -388,4 +388,3 @@ if __name__ == "__main__":
     # Save model
     torch.save(model, args.save_model_path)
     logging.info(f"Model saved to {args.save_model_path}")
-
