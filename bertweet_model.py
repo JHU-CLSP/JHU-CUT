@@ -28,7 +28,7 @@ from fairseq.data import Dictionary
 # Custom packages
 from littlebird import BERTweetTokenizer as TweetNormalizer
 from littlebird import TweetReader
-
+from BERTweet_utils import BERTweetTokenizer, Batcher, BERTweetWrapper
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -185,7 +185,7 @@ class Batcher:
             batch_y = y[start:end]
             if len(batch_X) < self.batch_size:
                 logging.debug(f"Expected batch size of {self.batch_size} but generated batch with {len(batch_X)} item(s) with indices [{start}:{end}].")
-            yield batch_X, batch_y
+            yield batch_X, batch_y, range(start,end)
 
 
 def create_BERTweet_features(BERTweetModel, tokenizer, X, device):
@@ -254,34 +254,51 @@ if __name__ == "__main__":
     data = tweets_df.text.values
     labels = tweets_df.label.values
 
+    # Get BERTweet feature representations of each tweet prior to training
+    logging.info(f"Collecting BERTweet feature representations")
+ 
+    feat_list = []
+    batcher = Batcher(data, labels, 200) # Strict hold BERTweet at 200 for now
+    for batch_iter, (X, y, batch_idx) in enumerate(batcher.batchify(tweets_df.index)):
+        logging.debug(f"batch_iter: {batch_iter}\tX: {X}\ty: {y}")
+        # Get BERTweet representation of tweets
+        feat_list.append(create_BERTweet_features(BERTweetModel, tokenizer, X, device))
+        feat_list[0].size()
+    features = torch.cat(feat_list).to(device)
+    logging.info(f"Created {len(features)} tweet represenations")
+
+
     if args.cross_validate:
         # Use cross-validation
         # Store results for each fold
         results = {}
         skf = StratifiedKFold(n_splits=5, random_state=args.seed, shuffle=True)
+        loss_dict = {}
         for fold, (train_index, test_index) in enumerate(skf.split(data, labels)): 
             # Initialize model, loss, and optimizer
             model = LogisticRegression().to(device)
             criterion = torch.nn.MSELoss().to(device)
             optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate)
-
+            #optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
+            
             # Initialize Batcher
-            batcher = Batcher(data, labels, args.batch_size)
+            batcher = Batcher(features, labels, args.batch_size)
 
             for epoch in range(args.num_epochs):
                 # Log progress
                 logging.info(f"On epoch {epoch}")
-                for batch_iter, (X, y) in enumerate(batcher.batchify(train_index)):
+                for batch_iter, (X, y, batch_idx) in enumerate(batcher.batchify(train_index)):
                     logging.debug(f"batch_iter: {batch_iter}\tX: {X}\ty: {y}")
-                    # Get BERTweet representation of tweets
-                    features = create_BERTweet_features(BERTweetModel, tokenizer, X, device)
 
                     # Batch descent
                     model.train()
                     optimizer.zero_grad()
-                    y_pred = model(features)
+                    
+                    # Slice all features for current indecies                    
+                    y_pred = model(X)
                     y = torch.reshape(torch.FloatTensor(y), y_pred.size()).to(device)
                     loss = criterion(y_pred, y)
+                    logging.info(f"loss: {loss} epoc: {epoch} batch_idx: {batch_idx}")
                     loss.backward()
                     optimizer.step()
 
@@ -289,6 +306,7 @@ if __name__ == "__main__":
                         # End program after first batch for debugging
                         break
 
+                    
             # After final epoch, test the model
             # Get BERTweet representation for test data
             test_X = data[test_index]
@@ -305,7 +323,7 @@ if __name__ == "__main__":
                 results_df = tweets_df['label'].iloc[test_index].to_frame().reset_index()
                 results_df['predicted'] = y_pred
                 results_df.to_csv("y_preds_bert.csv")
-
+            
             logging.info(f"""Results from fold {fold}
             Accuracy: {acc}
             Precision: {prec}
@@ -314,14 +332,14 @@ if __name__ == "__main__":
             """)
 
             # Save model and results
+            #REMOVED model from dict
             results[fold] = {
-                    "model": model,
                     "accuracy": acc,
                     "f1": f1,
                     "recall": rec,
                     "precision": prec
             }
-
+            
         # Average the folds for the final score
         final_acc, final_f1, final_rec, final_prec = [], [], [], []
         for fold, res in results.items():
@@ -353,6 +371,9 @@ if __name__ == "__main__":
         F1:  {results["f1"]}
         """)
 
+        results['batch_size']=args.batch_size
+        results['learning_rate']=args.learning_rate
+        
         # Save models and results
         with open(args.results_file, 'wb') as f:
             pickle.dump(results, f)
