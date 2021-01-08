@@ -68,6 +68,10 @@ class LogisticRegression(torch.nn.Module):
         model_out = self.forward(x)
         return (model_out > 0.5).int()
 
+    def predict_proba(self, x):
+        model_out = self.forward(x)
+        return model_out
+
 
 if __name__ == "__main__":
     args = parse_args()
@@ -103,8 +107,7 @@ if __name__ == "__main__":
     # Get BERTweet feature representations of each tweet prior to training
     logging.info(f"Collecting BERTweet feature representations")
     features = BERTweetWrapper.get_BERTweet_representation(data)
-    logging.info(f"Created {len(features)} tweet represenations")
-
+    logging.info(f"Created {len(features)} tweet representations")
 
     if args.cross_validate:
         # Use cross-validation
@@ -117,8 +120,7 @@ if __name__ == "__main__":
             model = LogisticRegression().to(device)
             criterion = torch.nn.MSELoss().to(device)
             optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate)
-            #optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
-            
+
             # Initialize Batcher
             batcher = Batcher(X=features[train_index], y=labels[train_index], batch_size=args.batch_size)
 
@@ -132,7 +134,7 @@ if __name__ == "__main__":
                     model.train()
                     optimizer.zero_grad()
                     
-                    # Slice all features for current indecies                    
+                    # Slice all features for current indices
                     y_pred = model(X)
                     y = torch.reshape(torch.FloatTensor(y), y_pred.size()).to(device)
                     loss = criterion(y_pred, y)
@@ -143,7 +145,6 @@ if __name__ == "__main__":
                         # End program after first batch for debugging
                         break
 
-                    
             # After final epoch, test the model
             # Get BERTweet representation for test data
             test_X = data[test_index]
@@ -169,7 +170,6 @@ if __name__ == "__main__":
             """)
 
             # Save model and results
-            #REMOVED model from dict
             results[fold] = {
                     "accuracy": acc,
                     "f1": f1,
@@ -208,8 +208,8 @@ if __name__ == "__main__":
         F1:  {results["f1"]}
         """)
 
-        results['batch_size']=args.batch_size
-        results['learning_rate']=args.learning_rate
+        results['batch_size'] = args.batch_size
+        results['learning_rate'] = args.learning_rate
         
         # Save models and results
         with open(args.results_file, 'wb') as f:
