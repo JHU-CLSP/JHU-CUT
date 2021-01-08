@@ -28,7 +28,7 @@ from fairseq.data import Dictionary
 # Custom packages
 from littlebird import BERTweetTokenizer as TweetNormalizer
 from littlebird import TweetReader
-from BERTweet_utils_2 import Batcher, BERTweetWrapper
+from BERTweet_utils import Batcher, BERTweetWrapper
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
