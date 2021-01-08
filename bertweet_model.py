@@ -28,7 +28,7 @@ from fairseq.data import Dictionary
 # Custom packages
 from littlebird import BERTweetTokenizer as TweetNormalizer
 from littlebird import TweetReader
-
+from BERTweet_utils_2 import Batcher, BERTweetWrapper
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -54,101 +54,6 @@ def parse_args():
     parser.add_argument("--seed", default=42, type=int, help="Use this flag to specify a manual seed for train/test split")
     return parser.parse_args()
 
-
-class BERTweetTokenizer():
-    """Tokenizer to use with BERTweet model. Modeled after the Hugging Face tokenizers"""
-    def __init__(self, 
-        model_path: str,
-        bos_token: str="<s>",
-        eos_token: str="</s>",
-        sep_token: str="</s>",
-        cls_token: str="<s>",
-        unk_token: str="<unk>",
-        mask_token: str="<mask>",
-        pad_token: str="<pad>",
-        pad_token_id: int=1,
-        add_prefix_space: bool=False):
-
-        self.model_path = model_path
-        self.bpe = fastBPE(SimpleNamespace(bpe_codes=f"{self.model_path}/bpe.codes"))
-        self.vocab = Dictionary()
-        self.vocab.add_from_file(f"{self.model_path}/dict.txt")
-        self.normalizer = TweetNormalizer()
-        self.mask_token = mask_token
-        self.add_prefix_space = add_prefix_space
-        self.pad_token = pad_token
-        self.pad_token_id = pad_token_id
-        self.bos_token=bos_token
-        self.eos_token=eos_token
-        self.unk_token=unk_token
-
-    @property
-    def vocab_size(self) -> int:
-        """Get vocabulary size"""
-        return len(self.vocab)
-
-    def get_vocab(self):
-        """Get the vocabulary Dictionary"""
-        return self.vocab
-
-    def encode(self, text: str) -> (Iterable[int], Iterable[int]):
-        """Encode a single string"""
-        # 1. Tokenize with BERTweet normalizer
-        text = " ".join(self.normalizer.tokenize(text))
-        # 2. Encode with fastBPE
-        # Keep list of first subword positions
-        subwords = f"{self.bos_token} {self.bpe.encode(text)} {self.eos_token}"
-        first_subword_pos = [i for i, w in enumerate(subwords.split()) if "@@" not in w]
-        # 3. Encode with vocab dict 
-        input_ids = self.vocab.encode_line(
-            subwords,
-            append_eos=False, 
-            add_if_not_exist=False).long()
-        return input_ids, first_subword_pos
-
-    def batch_encode(self, text_sequence: Iterable[str]) -> (Iterable[int], Iterable[int], Iterable[int]):
-        """Encode a list of strings"""
-        # 1. Get encoding for the text
-        # Keep the positions of the first subword tokens for later decoding
-        all_input_ids, all_position_ids = [], []
-        for text in text_sequence:
-            inputs, pos = self.encode(text)
-            all_input_ids.append(inputs)
-            all_position_ids.append(pos)
-
-        # 2. Pad to max length
-        padded_input_ids, mask = self._pad_to_max_length(
-            all_input_ids,
-            padding_value=self.pad_token_id)
-        
-        # 3. Return
-        return padded_input_ids, mask, all_position_ids
-
-    def _pad_to_max_length(self, sequences, padding_value: int):
-        """
-        Padding solution from https://discuss.pytorch.org/t/how-to-do-padding-based-on-lengths/24442/3
-        :param sequences: list of input_ids from batch encoding
-        :return: Tensor of size B x T x * where T is the length of the longest sequence
-        """
-        num = len(sequences)
-        max_len = max([s.size(0) for s in sequences])
-        out_dims = (num, max_len)
-        out_tensor = sequences[0].data.new(*out_dims).fill_(padding_value)
-        mask = sequences[0].data.new(*out_dims).fill_(0)
-        for i, tensor in enumerate(sequences):
-            length = tensor.size(0)
-            out_tensor[i, :length] = tensor
-            mask[i, :length] = 1
-        return out_tensor, mask
-
-    def og_tokenizer(self, text):
-        """Sanity check"""
-        text = " ".join(self.normalizer.tokenize(text))
-        subwords = '<s> ' + self.bpe.encode(text) + ' </s>'
-        input_ids = self.vocab.encode_line(subwords, append_eos=False, add_if_not_exist=False).long().tolist()
-        all_input_ids = torch.tensor([input_ids], dtype=torch.long)
-        return all_input_ids
-
  
 class LogisticRegression(torch.nn.Module):
     def __init__(self):
@@ -162,61 +67,6 @@ class LogisticRegression(torch.nn.Module):
     def predict(self, x):
         model_out = self.forward(x)
         return (model_out > 0.5).int()
-
-
-class Batcher:
-    def __init__(self, X, y, batch_size):
-        self.X = X
-        self.y = y
-        self.batch_size = batch_size
-    
-    def batchify(self, indices):
-        # Limit data to specified indices
-        X = self.X[indices]
-        y = self.y[indices]
-
-        # Calculate number of batches
-        num_batches = int(np.ceil(len(X) / self.batch_size))
-        for i in range(num_batches):
-            start = i * self.batch_size
-            end = start + self.batch_size
-            end = min(start + self.batch_size, len(X))
-            batch_X = X[start:end]
-            batch_y = y[start:end]
-            if len(batch_X) < self.batch_size:
-                logging.debug(f"Expected batch size of {self.batch_size} but generated batch with {len(batch_X)} item(s) with indices [{start}:{end}].")
-            yield batch_X, batch_y
-
-
-def create_BERTweet_features(BERTweetModel, tokenizer, X, device):
-    """Create BERTweet representation of provided input data (tweet text)"""
-    # Get BERTweet representation of tweets
-    # Use an attention mask to hide the padded tokens
-    input_ids, attention_mask, first_subword_positions = tokenizer.batch_encode(X)
-    input_ids = input_ids.to(device)
-    attention_mask = attention_mask.to(device)
-    with torch.no_grad():
-        features = BERTweetModel(
-            input_ids,
-            attention_mask=attention_mask,
-        )[0]  # Only want the embeddings
-    logging.debug(f"{features.size()}\n{features}")
-
-    # Represent Tweets as the average of their subwords (first subword positions only)
-    # Using just the first token gives very bad results
-    avg_features = []
-    for indices, subword_embeddings in zip(first_subword_positions, features):
-        logging.debug(f"""
-indices: {len(indices)}
-embedding {subword_embeddings.size()}
-AVG:{subword_embeddings[indices].size()}
-{torch.mean(subword_embeddings[indices], 0).size()}""")
-        avg_features.append(
-            torch.mean(subword_embeddings[indices], 0)
-        )
-    features = torch.stack(avg_features).to(device)
-    logging.debug(f"Features: {features.size()}")
-    return features
 
 
 if __name__ == "__main__":
@@ -238,12 +88,8 @@ if __name__ == "__main__":
 
     # Load model and configurations
     try:
-        config = RobertaConfig.from_pretrained(f"{args.BERTweet_model_path}/config.json")
-        BERTweetModel = RobertaModel.from_pretrained(
-            f"{args.BERTweet_model_path}/model.bin",
-            config=config)\
-            .to(device)
-        tokenizer = BERTweetTokenizer(args.BERTweet_model_path)
+        BERTweetWrapper = BERTweetWrapper(args.BERTweet_model_path, device)
+    
     except FileNotFoundError as err:
         logging.error(f"Check path exists: {args.BERTweet_model_path}\n{err}")
         sys.exit(1)
@@ -254,32 +100,40 @@ if __name__ == "__main__":
     data = tweets_df.text.values
     labels = tweets_df.label.values
 
+    # Get BERTweet feature representations of each tweet prior to training
+    logging.info(f"Collecting BERTweet feature representations")
+    features = BERTweetWrapper.get_BERTweet_representation(data)
+    logging.info(f"Created {len(features)} tweet represenations")
+
+
     if args.cross_validate:
         # Use cross-validation
         # Store results for each fold
         results = {}
         skf = StratifiedKFold(n_splits=5, random_state=args.seed, shuffle=True)
+        loss_dict = {}
         for fold, (train_index, test_index) in enumerate(skf.split(data, labels)): 
             # Initialize model, loss, and optimizer
             model = LogisticRegression().to(device)
             criterion = torch.nn.MSELoss().to(device)
             optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate)
-
+            #optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
+            
             # Initialize Batcher
-            batcher = Batcher(data, labels, args.batch_size)
+            batcher = Batcher(X=features[train_index], y=labels[train_index], batch_size=args.batch_size)
 
             for epoch in range(args.num_epochs):
                 # Log progress
                 logging.info(f"On epoch {epoch}")
-                for batch_iter, (X, y) in enumerate(batcher.batchify(train_index)):
+                for batch_iter, (X, y) in enumerate(batcher.batchify()):
                     logging.debug(f"batch_iter: {batch_iter}\tX: {X}\ty: {y}")
-                    # Get BERTweet representation of tweets
-                    features = create_BERTweet_features(BERTweetModel, tokenizer, X, device)
 
                     # Batch descent
                     model.train()
                     optimizer.zero_grad()
-                    y_pred = model(features)
+                    
+                    # Slice all features for current indecies                    
+                    y_pred = model(X)
                     y = torch.reshape(torch.FloatTensor(y), y_pred.size()).to(device)
                     loss = criterion(y_pred, y)
                     loss.backward()
@@ -289,11 +143,12 @@ if __name__ == "__main__":
                         # End program after first batch for debugging
                         break
 
+                    
             # After final epoch, test the model
             # Get BERTweet representation for test data
             test_X = data[test_index]
             test_y = labels[test_index]
-            test_features = create_BERTweet_features(BERTweetModel, tokenizer, test_X, device)
+            test_features = BERTweetWrapper.get_BERTweet_representation(test_X)
 
             y_pred = model.predict(test_features).cpu()
             acc = accuracy_score(y_pred, test_y)
@@ -305,7 +160,7 @@ if __name__ == "__main__":
                 results_df = tweets_df['label'].iloc[test_index].to_frame().reset_index()
                 results_df['predicted'] = y_pred
                 results_df.to_csv("y_preds_bert.csv")
-
+            
             logging.info(f"""Results from fold {fold}
             Accuracy: {acc}
             Precision: {prec}
@@ -314,14 +169,14 @@ if __name__ == "__main__":
             """)
 
             # Save model and results
+            #REMOVED model from dict
             results[fold] = {
-                    "model": model,
                     "accuracy": acc,
                     "f1": f1,
                     "recall": rec,
                     "precision": prec
             }
-
+            
         # Average the folds for the final score
         final_acc, final_f1, final_rec, final_prec = [], [], [], []
         for fold, res in results.items():
@@ -353,6 +208,9 @@ if __name__ == "__main__":
         F1:  {results["f1"]}
         """)
 
+        results['batch_size']=args.batch_size
+        results['learning_rate']=args.learning_rate
+        
         # Save models and results
         with open(args.results_file, 'wb') as f:
             pickle.dump(results, f)
@@ -366,20 +224,19 @@ if __name__ == "__main__":
     model = LogisticRegression().to(device)
     criterion = torch.nn.MSELoss().to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate)
-    batcher = Batcher(data, labels, args.batch_size)
+    batcher = Batcher(features, labels, batch_size=args.batch_size)
 
     for epoch in range(args.num_epochs):
         # Log progress
         logging.info(f"On epoch {epoch}")
-        for batch_iter, (X, y) in enumerate(batcher.batchify(tweets_df.index)):
+        for batch_iter, (X, y) in enumerate(batcher.batchify()):
             logging.debug(f"batch_iter: {batch_iter}\tX: {X}\ty: {y}")
             # Get BERTweet representation of tweets
-            features = create_BERTweet_features(BERTweetModel, tokenizer, X, device)
                 
             # Batch descent
             model.train()
             optimizer.zero_grad()
-            y_pred = model(features)
+            y_pred = model(X)
             y = torch.reshape(torch.FloatTensor(y), y_pred.size()).to(device)
             loss = criterion(y_pred, y)
             loss.backward()
