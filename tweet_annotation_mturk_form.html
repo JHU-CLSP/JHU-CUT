@@ -1,0 +1,1673 @@
+<html>
+<script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
+<head>
+<script type="text/javascript">
+
+function fadeSection(answer, tweetNumber) {
+    var is_event = document.getElementById("only_if_event" + tweetNumber);
+    var is_specific = document.getElementById("only_if_specific" + tweetNumber);
+    if ( answer == "specific") {
+      is_event.disabled = false;
+      is_event.className = "activeClass";
+      is_specific.disabled = false;
+      is_specific.className = "activeClass";
+    } else if (answer == "nonspecific") {
+      is_event.disabled = false;
+      is_event.className = "activeClass";
+      is_specific.disabled = true;
+      is_specific.className = "fadedClass";
+    } else {
+      is_event.disabled = true;
+      is_event.className = "fadedClass";
+      is_specific.disabled = true;
+      is_specific.className = "fadedClass";
+    }
+}
+
+
+function openTab(event, tabName) {
+  var i, tabcontent, tablinks;
+  tabcontent = document.getElementsByClassName("tabcontent");
+  for (i = 0; i < tabcontent.length; i++) {
+    tabcontent[i].style.display = "none";
+  }
+  tablinks = document.getElementsByClassName("tablinks");
+  for (i = 0; i < tablinks.length; i++) {
+    tablinks[i].className = tablinks[i].className.replace(" active", "");
+  }
+  document.getElementById(tabName).style.display = "block";
+  event.currentTarget.className += " active";
+}
+
+function validateResponse(tweetNumber) {
+    //check entries for this tweet only
+    var q1 = document.getElementById("is_event_a" + tweetNumber).checkValidity();
+    var only_if_specific = document.getElementById("only_if_specific" + tweetNumber).checkValidity();
+    var only_if_event = document.getElementById("only_if_event" + tweetNumber).checkValidity();
+    var hashtags =  document.getElementById("hashtag" + tweetNumber).checkValidity();
+    var unrest = document.getElementById("unrest_a" + tweetNumber).checkValidity();
+    if (q1 && only_if_specific && only_if_event && hashtags && unrest) {
+        return true;
+    }
+
+    //display invalid entry
+    return document.forms[0].reportValidity();
+}
+
+function nextTab(tweetNumber) {
+    if (validateResponse(tweetNumber)) {
+        document.getElementById("tab" + (tweetNumber + 1)).click();
+        // scroll to top of page
+        document.body.scrollTop = 0; // For Safari
+        document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+    }
+}
+
+</script>
+</head>
+
+<body>
+
+    <script type="text/javascript">
+        var q1Example = "<p><h2>1. Does this Tweet discuss a protest, march, riot, or strike?</h2>\
+                            <h4 style='margin: 0; padding: 0;'>Yes, a specific event:</h4>\
+                            <i>**a specific event is one which is linked to a time/date or location</i>\
+                            <ul style='font-style: italic; margin: 2;'>\
+                                <li style='margin: 5;'>Driving on Beyers Naude Drive, expect heavy delays from both direction @username these protesters are not going anywhere anytime soon</li>\
+                                <li style='margin: 5;'>We should protest oil prices downtown on Monday</li>\
+                            </ul>\
+                        </p>\
+                        <p><h4 style='margin: 0; padding: 0;'>Yes, in a non-specific fashion:</h4>\
+                            <ul style='font-style: italic; margin: 2;'>\
+                                <li style='margin: 5;'>We must give jobs to all those who always have time to protest everything..... </li>\
+                                <li style='margin: 5;'>We should protest oil prices</li>\
+                            </ul>\
+                        </p>\
+                        <p><h4 style='margin: 0; padding: 0;'>No / Uses a keyword (protest/riot/etc) with an alternative meaning</h4>\
+                            <ul style='font-style: italic; margin: 2;'>\
+                                <li style='margin: 5;'>Saturday’s are for early morning coffee runs.  Hope you all have a fabulous weekend ❤️</li>\
+                                <li style='margin: 5;'>The remainder of the baseball game will be played under protest.</li>\
+                                <li style='margin: 5;'>@Eminem is about to play with yall, can't u strike back? Coz only slim shady strike, Kendrick is the new kid on the block</li>\
+                            </ul>\
+                        </p>";
+
+
+        var q1aExample = "<p><h2>1a. At the time of this Tweet, is the referenced event current, in the past, or upcoming?</h2>\
+                            <h4 style='margin: 0; padding: 0;'>Current event (include ambiguous news-style headlines):</h4>\
+                            <ul style='font-style: italic; margin: 2;'>\
+                                <li style='margin: 5;'>3,000 pensioners protest 56 months unpaid arrears in Oyo</li>\
+                                <li style='margin: 5;'>Bakkies blocking the entrance to @Caltexsa to prevent protesters from coming close</li>\
+                                <li style='margin: 5;'>@CNN pray for South Africa! Pray for the safety of the protestors and pray for change in our country! #zumamustfall</li>\
+                            </ul>\
+                        </p>\
+                        <p><h4 style='margin: 0; padding: 0;'>Past event:</h4>\
+                            <ul style='font-style: italic; margin: 2;'>\
+                                <li style='margin: 5;'>I was in a peace march yesterday and I can't believe after all these years we are still marching for peace/li>\
+                                <li style='margin: 5;'>In the 1960s he famously led 30,000 anti-pass protesters from Langa, Cape Town to Parliament #PhilipKgosanaFuneral</li>\
+                            </ul>\
+                        </p>\
+                        <p><h4 style='margin: 0; padding: 0;'>Upcoming event:</h4>\
+                            <ul style='font-style: italic; margin: 2;'>\
+                                <li style='margin: 5;'>Mass protest planned in #AddisAbaba's #Meskel Square today against the Islamic State's execution of 30 Ethiopians in #Libya</li>\
+                                <li style='margin: 5;'>Good plan @username I've heard of this protest... Some even proposing rainbow flags n pink t shirts</li>\
+                            </ul>\
+                        </p>";
+
+        var q1bExample = "<p><h2>1b. Does this Tweet support or oppose the event in question?<h2>\
+                            <h4 style='margin: 0; padding: 0;'>Support:</h4>\
+                            <ul style='font-style: italic; margin: 2;'>\
+                                <li style='margin: 5;'>@SABCNewsroom Yebo yes!! I’m 100% behind those people who are protesting right now #PeoplesMarch</li>\
+                            </ul>\
+                        </p>\
+                        <p><h4 style='margin: 0; padding: 0;'>Oppose:</h4>\
+                            <ul style='font-style: italic; margin: 2;'>\
+                                <li style='margin: 5;'>What do these people protesting today think they'll achieve by vandalizing everything in town!?</li>\
+                            </ul>\
+                        </p>\
+                        <p><h4 style='margin: 0; padding: 0;'>Neither:</h4>\
+                            <ul style='font-style: italic; margin: 2;'>\
+                                <li style='margin: 5;'>Giant truck parked across freeway en route to @CapeTownAirport in protest to Zuma! I called it!</li>\
+                            </ul>\
+                        </p>";
+
+
+        var q1cExample = "<p><h2>1c. Does this Tweet state a specific topic of the event that reflects the intent of the protestors? </h2>\
+                            <h4 style='margin: 0; padding: 0;'>Yes:</h4>\
+                            <ul style='font-style: italic; margin: 2;'>\
+                                <li style='margin: 5;'>Ennerdale & Eldorado Park protestors have been complaining of slow pace by government in providing houses to the community. #HousingProtest</li>\
+                                <li style='margin: 5;'>A protest campaigning against sexual violence. Held every year!  #FlashbackFriday</li>\
+                            </ul>\
+                        </p>\
+                        <p><h4 style='margin: 0; padding: 0;'>No:</h4>\
+                            <ul style='font-style: italic; margin: 2;'>\
+                                <li style='margin: 5;'>Pray for South Africa! Pray for the safety of the protestors and pray for change in our country!</li>\
+                                <li style='margin: 5;'>Friends of #Palestine march minutes before the #Numsa march on their way to #Parliament @SAgovnews @ParliamentofRSA</li>\
+                            </ul>\
+                        </p>";
+
+
+        var q1dExample = "<p><h2>1d. Does this Tweet describe participation/intent to participate in the event?</h2>\
+                            <h4 style='margin: 0; padding: 0;'>In attedance / Intent to participate / Invitation to participate:</h4>\
+                            <ul style='font-style: italic; margin: 2;'>\
+                                <li style='margin: 5;'>Going to get a good night’s sleep tonight before protesting tomorrow. Hands off our South Africa Mr. Zuma</li>\
+                                <li style='margin: 5;'>Everyone come to Main St. at 7 to protest!</li>\
+                            </ul>\
+                        </p>\
+                        <p><h4 style='margin: 0; padding: 0;'>Specifically not attending</h4>\
+                            <ul style='font-style: italic; margin: 2;'>\
+                                <li style='margin: 5;'>I will NOT be protesting today. Thanks Sarah & Jono, but no thanks.</li>\
+                            </ul>\
+                        </p>\
+                        <p><h4 style='margin: 0; padding: 0;'>Neither</h4>\
+                            <ul style='font-style: italic; margin: 2;'>\
+                                <li style='margin: 5;'>SouthAfrica has the characteristics of a revolutionary protest movement.</li>\
+                            </ul>\
+                        </p>";
+
+        var q1eExample = "<p><h2>1e. If this Tweet contains hashtags specific to the event, list the hashtags:</h2>\
+                    <h4 style='margin: 0; padding: 0;'>Exampls of hashtags that <em> should </em> be listed:</h4>\
+                    <ul style='font-style: italic; margin: 2;'>\
+                        <li style='margin: 5;'>Shemeni Stan Mathabatha showed leadership today...<b>#ANCAntiXenophobia</b> march was a success!</li>\
+                    </ul>\
+                </p>\
+                <p><h4 style='margin: 0; padding: 0;'>Examples of hashtags that <em> should not</em> be listed:</h4>\
+                    <ul style='font-style: italic; margin: 2;'>\
+                        <li style='margin: 5;'>Anti-government Protest continues <b>#HappeningNow</b></li>\
+                    </ul>\
+                </p>";
+
+        var q2Example = "<p><h2>2. Does this Tweet indicate civil or political unrest, frustration, or dissatisfaction? For example, dissatisfaction with government policy, economic situation, etc.</h2>\
+                            <h4 style='margin: 0; padding: 0;'>Yes:</h4>\
+                            <ul style='font-style: italic; margin: 2;'>\
+                                <li style='margin: 5;'>And they talk about justice. Shame on government of India. #kashmir</li>\
+                                <li style='margin: 5;'>We don’t have fuel and power in  Nigeria!!!</li>\
+                                <li style='margin: 5;'>@username - Boko haram has to be defeated. People r killed every day, communities ransacked and invaded. All day tell us is Boko haram has to be defeated</li>\
+                            </ul>\
+                        </p>\
+                        </p>";
+
+
+
+    </script>
+
+<h1>Identifying Event Tweets</h1>
+
+<crowd-modal class="example" link-text = "View Full Instructions and HIT Information" link-type = "link" style="font-weight: normal;">
+
+    <div style="background-color:#d3d3d3; padding-top: 10px;  padding-right: 10px;  padding-bottom: 10px;  padding-left: 10px; ">
+			<p><h1>Informed Consent Form:</h1>
+			<b style="line-height:1.6em">Purpose of research study:</b><span style="line-height:1.6em;font-size:small"> We are collecting data to study how protest events are discussed on Twitter.</span><br>
+			<b style="line-height:1.6em">Benefits:</b><span style="line-height:1.6em;font-size:small"> This study may benefit society by improving our awareness of causes of protest events.</span><br>
+			<b style="line-height:1.6em">Risks:&nbsp;</b><span style="line-height:1.6em;font-size:small">There are no risks for participating in this study.</span><br>
+			<b style="line-height:1.6em">Voluntary participation:&nbsp;</b><span style="font-size:small;line-height:1.6em">You may stop participating at any time without penalty by clicking on the “Return HIT” button, or closing your browser window.</span><br>
+			<b style="line-height:1.6em">We may end your participation if</b><span style="font-size:small;line-height:1.6em"> you do not follow the instructions, or your answers significantly deviate from known answers.</span><br>
+			<b style="line-height:1.6em">Confidentiality: </b><span style="font-size:small;line-height:1.6em">The only identifying information kept about you will be a WorkerID serial number and your IP address. This information may be disclosed to other researchers.</span><br>
+			<b style="line-height:1.6em">Questions/concerns: </b><span style="font-size:small;line-height:1.6em">You may e-mail questions to the principle investigator, </span><a href="http://www.cs.jhu.edu/~mdredze/" style="color:rgb(17,85,204);font-family:arial,sans-serif;line-height:normal" target="_blank">Dr. Mark Dredze.</a><br>
+			<span style="font-size:small;line-height:1.6em">If you feel you have been treated unfairly you may contact the Johns Hopkins University's </span><a href="https://homewoodirb.jhu.edu/" style="color:rgb(17,85,204);font-family:arial,sans-serif;line-height:normal" target="_blank">Office of Human Research</a><br>
+			<b style="line-height:1.6em">Clicking on the “Accept HIT” button</b><span style="font-size:small;line-height:1.6em"> indicates that you understand the information in this consent form. You have not waived any legal rights you otherwise would have as a participant in a research study.</span></p>
+			</div>
+
+    <h1>Instructions:</h1>
+
+    Read the tweet in the blue box at the top of each tab, then answer the 2-7 questions that follow.<br>
+    <i>Some questions will be greyed-out depending on your responses</i><br>
+    After you have completed the final tweet click the <crowd-button variant="primary">Submit</crowd-button> button to submit your responses. <br>
+    <i>You will not be able to submit until you have answered all required fields.</i>
+
+
+    <h1>Questions with Examples:</h1>
+    <script>
+        document.write(q1Example + " <br><hr><br>");
+        document.write(q1aExample + "<br><hr><br>");
+        document.write(q1bExample + "<br><hr><br>");
+        document.write(q1cExample + "<br><hr><br>");
+        document.write(q1dExample + "<br><hr><br>");
+        document.write(q1eExample + "<br><hr><br>");
+        document.write(q2Example);
+    </script>
+</crowd-modal>
+
+<crowd-form id=form>
+    <div id="tweet1" class="tabcontent">
+        <h2><u>Tweet #1</u></h2>
+        <h3>Read the following tweet and answer the questions below:</h3>
+        <crowd-card>
+            <div class="tweetcard">
+                ${tweet1}
+            </div>
+        </crowd-card>
+        <br>
+
+        <p>
+        <i>Some questions may remain inactive depending on your responses</i>
+
+        <h4>1. Does this Tweet discuss a protest, march, riot, or strike?
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q1Example);</script>
+            </crowd-modal>
+
+
+        </h4>
+        <div>
+            <input type="radio" id="is_event_a1" name="is_event1" value="specific" onclick="fadeSection('specific', '1');" required>
+            <label for="is_event_a1">Yes, a specific event</label>
+            <input type="radio" id="is_event_b1" name="is_event1" value="nonspecific" onclick="fadeSection('nonspecific', '1');">
+            <label for="is_event_b1">Yes, in a non-specific fashion</label>
+            <input type="radio" id="is_event_c1" name="is_event1" value="no" onclick="fadeSection('no', '1');">
+            <label for="is_event_c1">No / Uses a keyword (protest/riot/etc) with an alternative meaning</label>
+            <input type="radio" id="is_event_d1" name="is_event1" value="notenglish" onclick="fadeSection('notenglish', '1');">
+            <label for="is_event_d1">Not English</label>
+        </div>
+        </p>
+        <br>
+        <fieldset id="only_if_specific1" disabled class="fadedClass">
+            <p>
+            <h4>1a. At the time of this Tweet, is the referenced event currently in progress, in the past, or an upcoming event?
+                <br>
+                &ensp;&nbsp;
+                <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1aExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="timing_a1" name="timing1" value="current" required>
+                <label for="timing_a1">Current event (includes ambiguous news-style headlines)</label>
+                <input type="radio" id="timing_b1" name="timing1" value="past">
+                <label for="timing_b1">Past event</label>
+                <input type="radio" id="timing_c1" name="timing1" value="future">
+                <label for="timing_c1">Upcoming event</label>
+            </p>
+            <br>
+        </fieldset>
+        <fieldset id="only_if_event1" disabled class="fadedClass">
+            <p>
+            <h4>1b. Does this Tweet support or oppose the event in question?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1bExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="sentiment_a1" name="sentiment1" value="support" required>
+                <label for="sentiment_a1">Support</label>
+                <input type="radio" id="sentiment_b1" name="sentiment1" value="oppose">
+                <label for="sentiment_b1">Oppose</label>
+                <input type="radio" id="sentiment_c1" name="sentiment1" value="neither">
+                <label for="sentiment_c1">Neither</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1c. Does this Tweet state a specific topic of the event that reflects the intent of the protestors?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1cExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="topic_a1" name="topic1" value="yes" required>
+                <label for="topic_a1">Yes</label>
+                <input type="radio" id="topic_b1" name="topic1" value="no">
+                <label for="topic_b1">No</label>
+                <input type="radio" id="topic_c1" name="topic1" value="unclear">
+                <label for="topic_c1">Unclear</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1d. Does this Tweet describe participation/intent to participate in the event?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1dExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="participation_a1" name="particiation1" value="yes" required>
+                <label for="participation_a1">In attedance / Intent to participate / Invitation to participate</label>
+                <input type="radio" id="participation_b1" name="particiation1" value="no">
+                <label for="participation_b1">Specifically NOT attending</label>
+                <input type="radio" id="participation_c1" name="particiation1" value="neither">
+                <label for="participation_c1">Neither</label>
+             </p>
+            <br>
+            <br>
+            <p>
+            <h4>1e. If this Tweet contains hashtags specific to the event, list the hashtags:
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1eExample)</script>
+                </crowd-modal>
+            </h4>
+                Please enter as "#hashtag1, #hashtag2,..."
+                <br>
+                <input type="text" id="hashtag1" name="hashtag1" placeholder="#hashtag1, #hashtag2,..." pattern="(#[A-Za-z0-9]{1,})(,\s*#[A-Za-z0-9]{1,})*"></input>
+            </p>
+            <br>
+        </fieldset>
+        <p>
+        <h4>2. Does this Tweet indicate civil or political unrest, frustration, or dissatisfaction? For example, dissatisfaction with government policy, economic situation, etc.
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q2Example)</script>
+            </crowd-modal>
+        </h4>
+            <input type="radio" id="unrest_a1" name="unrest1" value="yes" required>
+            <label for="unrest_a1">Yes</label>
+            <input type="radio" id="unrest_b1" name="unrest1" value="no">
+            <label for="unrest_b1">No</label>
+
+        </p>
+    </div>
+
+    <br>
+    <br>
+    <hr style="height:2px;border-width:0;color:gray;background-color:gray">
+    <br>
+    <br>
+
+    <div id="tweet2" class="tabcontent">
+        <h2><u>Tweet #2</u></h2>
+        <h3>Read the following tweet and answer the questions below:</h3>
+        <crowd-card>
+            <div class="tweetcard">
+                ${tweet2}
+            </div>
+        </crowd-card>
+        <br>
+
+        <p>
+        <i>Some questions may remain inactive depending on your responses</i>
+
+        <h4>1. Does this Tweet discuss a protest, march, riot, or strike?
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q1Example);</script>
+            </crowd-modal>
+
+
+        </h4>
+            <input type="radio" id="is_event_a2" name="is_event2" value="specific" onclick="fadeSection('specific', '2');" required>
+            <label for="is_event_a2">Yes, a specific event</label>
+            <input type="radio" id="is_event_b2" name="is_event2" value="nonspecific" onclick="fadeSection('nonspecific', '2');">
+            <label for="is_event_b2">Yes, in a non-specific fashion</label>
+            <input type="radio" id="is_event_c2" name="is_event2" value="no" onclick="fadeSection('no', '2');">
+            <label for="is_event_c2">No / Uses a keyword (protest/riot/etc) with an alternative meaning</label>
+            <input type="radio" id="is_event_d2" name="is_event2" value="notenglish" onclick="fadeSection('notenglish', '2');">
+            <label for="is_event_d2">Not English</label>
+        </p>
+        <br>
+        <fieldset id="only_if_specific2" disabled class="fadedClass">
+            <p>
+            <h4>1a. At the time of this Tweet, is the referenced event current, in the past, or upcoming?
+                <br>
+                &ensp;&nbsp;
+                <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1aExample)</script>
+                </crowd-modal>
+            </h4>
+               <input type="radio" id="timing_a2" name="timing2" value="current" required>
+                <label for="timing_a2">Current event (includes ambiguous news-style headlines)</label>
+                <input type="radio" id="timing_b2" name="timing2" value="past">
+                <label for="timing_b2">Past event</label>
+                <input type="radio" id="timing_c2" name="timing2" value="future">
+                <label for="timing_c2">Upcoming event</label>
+            </p>
+            <br>
+        </fieldset>
+        <fieldset id="only_if_event2" disabled class="fadedClass">
+            <p>
+            <h4>1b. Does this Tweet support or oppose the event in question?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1bExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="sentiment_a2" name="sentiment2" value="support" required>
+                <label for="sentiment_a2">Support</label>
+                <input type="radio" id="sentiment_b2" name="sentiment2" value="oppose">
+                <label for="sentiment_b2">Oppose</label>
+                <input type="radio" id="sentiment_c2" name="sentiment2" value="neither">
+                <label for="sentiment_c2">Neither</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1c. Does this Tweet state a specific topic of the event that reflects the intent of the protestors?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1cExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="topic_a2" name="topic2" value="yes" required>
+                <label for="topic_a2">Yes</label>
+                <input type="radio" id="topic_b2" name="topic2" value="no">
+                <label for="topic_b2">No</label>
+                <input type="radio" id="topic_c2" name="topic2" value="unclear">
+                <label for="topic_c2">Unclear</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1d. Does this Tweet describe participation/intent to participate in the event?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1dExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="participation_a2" name="particiation2" value="yes" required>
+                <label for="participation_a2">In attedance / Intent to participate / Invitation to participate</label>
+                <input type="radio" id="participation_b2" name="particiation2" value="no">
+                <label for="participation_b2">Specifically NOT attending</label>
+                <input type="radio" id="participation_c2" name="particiation2" value="neither">
+                <label for="participation_c2">Neither</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1e. If this Tweet contains hashtags specific to the event, list the hashtags:
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1eExample)</script>
+                </crowd-modal>
+            </h4>
+                Please enter as "#hashtag1, #hashtag2,..."
+                <br>
+                <input type="text" id="hashtag2" name="hashtag2" placeholder="#hashtag1, #hashtag2,..." pattern="(#[A-Za-z0-9]{1,})(,\s*#[A-Za-z0-9]{1,})*"></input>
+            </p>
+            <br>
+        </fieldset>
+        <p>
+        <h4>2. Does this Tweet indicate civil or political unrest, frustration, or dissatisfaction? For example, dissatisfaction with government policy, economic situation, etc.
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q2Example)</script>
+            </crowd-modal>
+        </h4>
+            <input type="radio" id="unrest_a2" name="unrest2" value="yes" required>
+            <label for="unrest_a2">Yes</label>
+            <input type="radio" id="unrest_b2" name="unrest2" value="no">
+            <label for="unrest_b2">No</label>
+        </p>
+    </div>
+
+    <br>
+    <br>
+    <hr style="height:2px;border-width:0;color:gray;background-color:gray">
+    <br>
+    <br>
+
+    <div id="tweet3" class="tabcontent">
+        <h2><u>Tweet #3</u></h2>
+        <h3>Read the following tweet and answer the questions below:</h3>
+        <crowd-card>
+            <div class="tweetcard">
+                ${tweet3}
+            </div>
+        </crowd-card>
+        <br>
+
+        <p>
+        <i>Some questions may remain inactive depending on your responses</i>
+
+        <h4>1. Does this Tweet directly reference a protest, march, riot, or strike?
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q1Example);</script>
+            </crowd-modal>
+
+
+        </h4>
+            <input type="radio" id="is_event_a3" name="is_event3" value="specific" onclick="fadeSection('specific', '3');" required>
+            <label for="is_event_a3">Yes, a specific event</label>
+            <input type="radio" id="is_event_b3" name="is_event3" value="nonspecific" onclick="fadeSection('nonspecific', '3');">
+            <label for="is_event_b3">Yes, in a non-specific fashion</label>
+            <input type="radio" id="is_event_c3" name="is_event3" value="no" onclick="fadeSection('no', '3');">
+            <label for="is_event_c3">No / Uses a keyword (protest/riot/etc) with an alternative meaning</label>
+            <input type="radio" id="is_event_d3" name="is_event3" value="notenglish" onclick="fadeSection('notenglish', '3');">
+            <label for="is_event_d3">Not English</label>
+        </p>
+        <br>
+        <fieldset id="only_if_specific3" disabled class="fadedClass">
+            <p>
+            <h4>1a. At the time of this Tweet, is the referenced event current, in the past, or upcoming?
+                <br>
+                &ensp;&nbsp;
+                <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1aExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="timing_a3" name="timing3" value="current" required>
+                <label for="timing_a3">Current event (includes ambiguous news-style headlines)</label>
+                <input type="radio" id="timing_b3" name="timing3" value="past">
+                <label for="timing_b3">Past event</label>
+                <input type="radio" id="timing_c3" name="timing3" value="future">
+                <label for="timing_c3">Upcoming event</label>
+            </p>
+            <br>
+        </fieldset>
+        <fieldset id="only_if_event3" disabled class="fadedClass">
+            <p>
+            <h4>1b. Does this Tweet support or oppose the event in question?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1bExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="sentiment_a3" name="sentiment3" value="support" required>
+                <label for="sentiment_a3">Support</label>
+                <input type="radio" id="sentiment_b3" name="sentiment3" value="oppose">
+                <label for="sentiment_b3">Oppose</label>
+                <input type="radio" id="sentiment_c3" name="sentiment3" value="neither">
+                <label for="sentiment_c3">Neither</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1c. Does this Tweet state a specific topic of the event that reflects the intent of the protestors?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1cExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="topic_a3" name="topic3" value="yes" required>
+                <label for="topic_a3">Yes</label>
+                <input type="radio" id="topic_b3" name="topic3" value="no">
+                <label for="topic_b3">No</label>
+                <input type="radio" id="topic_c3" name="topic3" value="unclear">
+                <label for="topic_c3">Unclear</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1d. Does this Tweet describe participation/intent to participate in the event?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1dExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="participation_a3" name="particiation3" value="yes" required>
+                <label for="participation_a3">In attedance / Intent to participate / Invitation to participate</label>
+                <input type="radio" id="participation_b3" name="particiation3" value="no">
+                <label for="participation_b3">Specifically NOT attending</label>
+                <input type="radio" id="participation_c3" name="particiation3" value="neither">
+                <label for="participation_c3">Neither</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>
+            <h4>1e. If this Tweet contains hashtags specific to the event, list the hashtags:
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1eExample)</script>
+                </crowd-modal>
+            </h4>
+                Please enter as "#hashtag1, #hashtag2,..."
+                <br>
+                <input type="text" id="hashtag3" name="hashtag3" placeholder="#hashtag1, #hashtag2,..." pattern="(#[A-Za-z0-9]{1,})(,\s*#[A-Za-z0-9]{1,})*"></input>
+            </p>
+            <br>
+        </fieldset>
+        <p>
+        <h4>2. Does this Tweet indicate civil or political unrest, frustration, or dissatisfaction? For example, dissatisfaction with government policy, economic situation, etc.
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q2Example)</script>
+            </crowd-modal>
+        </h4>
+            <input type="radio" id="unrest_a3" name="unrest3" value="yes" required>
+            <label for="unrest_a3">Yes</label>
+            <input type="radio" id="unrest_b3" name="unrest3" value="no">
+            <label for="unrest_b3">No</label>
+        </p>
+    </div>
+
+    <br>
+    <br>
+    <hr style="height:2px;border-width:0;color:gray;background-color:gray">
+    <br>
+    <br>
+
+    <div id="tweet4" class="tabcontent">
+        <h2><u>Tweet #4</u></h2>
+        <h3>Read the following tweet and answer the questions below:</h3>
+        <crowd-card>
+            <div class="tweetcard">
+                ${tweet4}
+            </div>
+        </crowd-card>
+        <br>
+
+        <p>
+        <i>Some questions may remain inactive depending on your responses</i>
+
+        <h4>1. Does this Tweet discuss a protest, march, riot, or strike?
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q1Example);</script>
+            </crowd-modal>
+
+
+        </h4>
+            <input type="radio" id="is_event_a4" name="is_event4" value="specific" onclick="fadeSection('specific', '4');" required>
+            <label for="is_event_a4">Yes, a specific event</label>
+            <input type="radio" id="is_event_b4" name="is_event4" value="nonspecific" onclick="fadeSection('nonspecific', '4');">
+            <label for="is_event_b4">Yes, in a non-specific fashion</label>
+            <input type="radio" id="is_event_c4" name="is_event4" value="no" onclick="fadeSection('no', '4');">
+            <label for="is_event_c4">No / Uses a keyword (protest/riot/etc) with an alternative meaning</label>
+            <input type="radio" id="is_event_d4" name="is_event4" value="notenglish" onclick="fadeSection('notenglish', '4');">
+            <label for="is_event_d4">Not English</label>
+        </p>
+        <br>
+        <fieldset id="only_if_specific4" disabled class="fadedClass">
+            <p>
+            <h4>1a. At the time of this Tweet, is the referenced event current, in the past, or upcoming?
+                <br>
+                &ensp;&nbsp;
+                <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1aExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="timing_a4" name="timing4" value="current" required>
+                <label for="timing_a4">Current event (includes ambiguous news-style headlines)</label>
+                <input type="radio" id="timing_b4" name="timing4" value="past">
+                <label for="timing_b4">Past event</label>
+                <input type="radio" id="timing_c4" name="timing4" value="future">
+                <label for="timing_c4">Upcoming event</label>
+            </p>
+            <br>
+        </fieldset>
+        <fieldset id="only_if_event4" disabled class="fadedClass">
+            <p>
+            <h4>1b. Does this Tweet support or oppose the event in question?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1bExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="sentiment_a4" name="sentiment4" value="support" required>
+                <label for="sentiment_a4">Support</label>
+                <input type="radio" id="sentiment_b4" name="sentiment4" value="oppose">
+                <label for="sentiment_b4">Oppose</label>
+                <input type="radio" id="sentiment_c4" name="sentiment4" value="neither">
+                <label for="sentiment_c4">Neither</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1c. Does this Tweet state a specific topic of the event that reflects the intent of the protestors?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1cExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="topic_a4" name="topic4" value="yes" required>
+                <label for="topic_a4">Yes</label>
+                <input type="radio" id="topic_b4" name="topic4" value="no">
+                <label for="topic_b4">No</label>
+                <input type="radio" id="topic_c4" name="topic4" value="unclear">
+                <label for="topic_c4">Unclear</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1d. Does this Tweet describe participation/intent to participate in the event?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1dExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="participation_a4" name="particiation4" value="yes" required>
+                <label for="participation_a4">In attedance / Intent to participate / Invitation to participate</label>
+                <input type="radio" id="participation_b4" name="particiation4" value="no">
+                <label for="participation_b4">Specifically NOT attending</label>
+                <input type="radio" id="participation_c4" name="particiation4" value="neither">
+                <label for="participation_c4">Neither</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1e. If this Tweet contains hashtags specific to the event, list the hashtags:
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1eExample)</script>
+                </crowd-modal>
+            </h4>
+                Please enter as "#hashtag1, #hashtag2,..."
+                <br>
+                <input type="text" id="hashtag4" name="hashtag4" placeholder="#hashtag1, #hashtag2,..." pattern="(#[A-Za-z0-9]{1,})(,\s*#[A-Za-z0-9]{1,})*"></input>
+            </p>
+            <br>
+        </fieldset>
+        <p>
+        <h4>2. Does this Tweet indicate civil or political unrest, frustration, or dissatisfaction? For example, dissatisfaction with government policy, economic situation, etc.
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q2Example)</script>
+            </crowd-modal>
+        </h4>
+            <input type="radio" id="unrest_a4" name="unrest4" value="yes" required>
+            <label for="unrest_a4">Yes</label>
+            <input type="radio" id="unrest_b4" name="unrest4" value="no">
+            <label for="unrest_b4">No</label>
+        </p>
+    </div>
+
+    <br>
+    <br>
+    <hr style="height:2px;border-width:0;color:gray;background-color:gray">
+    <br>
+    <br>
+
+    <div id="tweet5" class="tabcontent">
+        <h2><u>Tweet #5</u></h2>
+        <h3>Read the following tweet and answer the questions below:</h3>
+        <crowd-card>
+            <div class="tweetcard">
+                ${tweet5}
+            </div>
+        </crowd-card>
+        <br>
+
+        <p>
+        <i>Some questions may remain inactive depending on your responses</i>
+
+        <h4>1. Does this Tweet directly reference a protest, march, riot, or strike?
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q1Example);</script>
+            </crowd-modal>
+
+
+        </h4>
+            <input type="radio" id="is_event_a5" name="is_event5" value="specific" onclick="fadeSection('specific', '5');" required>
+            <label for="is_event_a5">Yes, a specific event</label>
+            <input type="radio" id="is_event_b5" name="is_event5" value="nonspecific" onclick="fadeSection('nonspecific', '5');">
+            <label for="is_event_b5">Yes, in a non-specific fashion</label>
+            <input type="radio" id="is_event_c5" name="is_event5" value="no" onclick="fadeSection('no', '5');">
+            <label for="is_event_c5">No / Uses a keyword (protest/riot/etc) with an alternative meaning</label>
+            <input type="radio" id="is_event_d5" name="is_event5" value="notenglish" onclick="fadeSection('notenglish', '5');">
+            <label for="is_event_d5">Not English</label>
+        </p>
+        <br>
+        <fieldset id="only_if_specific5" disabled class="fadedClass">
+            <p>
+            <h4>1a. At the time of this Tweet, is the referenced event current, in the past, or upcoming?
+                <br>
+                &ensp;&nbsp;
+                <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1aExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="timing_a5" name="timing5" value="current" required>
+                <label for="timing_a5">Current event (includes ambiguous news-style headlines)</label>
+                <input type="radio" id="timing_b5" name="timing5" value="past">
+                <label for="timing_b5">Past event</label>
+                <input type="radio" id="timing_c5" name="timing5" value="future">
+                <label for="timing_c5">Upcoming event</label>
+            </p>
+            <br>
+        </fieldset>
+        <fieldset id="only_if_event5" disabled class="fadedClass">
+            <p>
+            <h4>1b. Does this Tweet support or oppose the event in question?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1bExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="sentiment_a5" name="sentiment5" value="support" required>
+                <label for="sentiment_a5">Support</label>
+                <input type="radio" id="sentiment_b5" name="sentiment5" value="oppose">
+                <label for="sentiment_b5">Oppose</label>
+                <input type="radio" id="sentiment_c5" name="sentiment5" value="neither">
+                <label for="sentiment_c5">Neither</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1c. Does this Tweet state a specific topic of the event that reflects the intent of the protestors?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1cExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="topic_a5" name="topic5" value="yes" required>
+                <label for="topic_a5">Yes</label>
+                <input type="radio" id="topic_b5" name="topic5" value="no">
+                <label for="topic_b5">No</label>
+                <input type="radio" id="topic_c5" name="topic5" value="unclear">
+                <label for="topic_c5">Unclear</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1d. Does this Tweet describe participation/intent to participate in the event?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1dExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="participation_a5" name="particiation5" value="yes" required>
+                <label for="participation_a5">In attedance / Intent to participate / Invitation to participate</label>
+                <input type="radio" id="participation_b5" name="particiation5" value="no">
+                <label for="participation_b5">Specifically NOT attending</label>
+                <input type="radio" id="participation_c5" name="particiation5" value="neither">
+                <label for="participation_c5">Neither</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1e. If this Tweet contains hashtags specific to the event, list the hashtags:
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1eExample)</script>
+                </crowd-modal>
+            </h4>
+                Please enter as "#hashtag1, #hashtag2,..."
+                <br>
+                <input type="text" id="hashtag5" name="hashtag5" placeholder="#hashtag1, #hashtag2,..." pattern="(#[A-Za-z0-9]{1,})(,\s*#[A-Za-z0-9]{1,})*"></input>
+            </p>
+            <br>
+        </fieldset>
+        <p>
+        <h4>2. Does this Tweet indicate civil or political unrest, frustration, or dissatisfaction? For example, dissatisfaction with government policy, economic situation, etc.
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q2Example)</script>
+            </crowd-modal>
+        </h4>
+            <input type="radio" id="unrest_a5" name="unrest5" value="yes" required>
+            <label for="unrest_a5">Yes</label>
+            <input type="radio" id="unrest_b5" name="unrest5" value="no">
+            <label for="unrest_b5">No</label>
+        </p>
+    </div>
+
+    <br>
+    <br>
+    <hr style="height:2px;border-width:0;color:gray;background-color:gray">
+    <br>
+    <br>
+
+    <div id="tweet6" class="tabcontent">
+        <h2><u>Tweet #6</u></h2>
+        <h3>Read the following tweet and answer the questions below:</h3>
+        <crowd-card>
+            <div class="tweetcard">
+                ${tweet6}
+            </div>
+        </crowd-card>
+        <br>
+
+        <p>
+        <i>Some questions may remain inactive depending on your responses</i>
+
+        <h4>1. Does this Tweet discuss a protest, march, riot, or strike?
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q1Example);</script>
+            </crowd-modal>
+
+
+        </h4>
+            <input type="radio" id="is_event_a6" name="is_event6" value="specific" onclick="fadeSection('specific', '6');" required>
+            <label for="is_event_a6">Yes, a specific event</label>
+            <input type="radio" id="is_event_b6" name="is_event6" value="nonspecific" onclick="fadeSection('nonspecific', '6');">
+            <label for="is_event_b6">Yes, in a non-specific fashion</label>
+            <input type="radio" id="is_event_c6" name="is_event6" value="no" onclick="fadeSection('no', '6');">
+            <label for="is_event_c6">No / Uses a keyword (protest/riot/etc) with an alternative meaning</label>
+            <input type="radio" id="is_event_d6" name="is_event6" value="notenglish" onclick="fadeSection('notenglish', '6');">
+            <label for="is_event_d6">Not English</label>
+        </p>
+        <br>
+        <fieldset id="only_if_specific6" disabled class="fadedClass">
+            <p>
+            <h4>1a. At the time of this Tweet, is the referenced event current, in the past, or upcoming?
+                <br>
+                &ensp;&nbsp;
+                <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1aExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="timing_a6" name="timing6" value="current" required>
+                <label for="timing_a6">Current event (includes ambiguous news-style headlines)</label>
+                <input type="radio" id="timing_b6" name="timing6" value="past">
+                <label for="timing_b6">Past event</label>
+                <input type="radio" id="timing_c6" name="timing6" value="future">
+                <label for="timing_c6">Upcoming event</label>
+            </p>
+            <br>
+        </fieldset>
+        <fieldset id="only_if_event6" disabled class="fadedClass">
+            <p>
+            <h4>1b. Does this Tweet support or oppose the event in question?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1bExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="sentiment_a6" name="sentiment6" value="support" required>
+                <label for="sentiment_a6">Support</label>
+                <input type="radio" id="sentiment_b6" name="sentiment6" value="oppose">
+                <label for="sentiment_b6">Oppose</label>
+                <input type="radio" id="sentiment_c6" name="sentiment6" value="neither">
+                <label for="sentiment_c6">Neither</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1c. Does this Tweet state a specific topic of the event that reflects the intent of the protestors?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1cExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="topic_a6" name="topic6" value="yes" required>
+                <label for="topic_a6">Yes</label>
+                <input type="radio" id="topic_b6" name="topic6" value="no">
+                <label for="topic_b6">No</label>
+                <input type="radio" id="topic_c6" name="topic6" value="unclear">
+                <label for="topic_c6">Unclear</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1d. Does this Tweet describe participation/intent to participate in the event?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1dExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="participation_a6" name="particiation6" value="yes" required>
+                <label for="participation_a6">In attedance / Intent to participate / Invitation to participate</label>
+                <input type="radio" id="participation_b6" name="particiation6" value="no">
+                <label for="participation_b6">Specifically NOT attending</label>
+                <input type="radio" id="participation_c6" name="particiation6" value="neither">
+                <label for="participation_c6">Neither</label>
+                </p>
+            <br>
+            <br>
+            <p>
+            <h4>1e. If this Tweet contains hashtags specific to the event, list the hashtags:
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1eExample)</script>
+                </crowd-modal>
+            </h4>
+                Please enter as "#hashtag1, #hashtag2,..."
+                <br>
+                <input type="text" id="hashtag6" name="hashtag6" placeholder="#hashtag1, #hashtag2,..." pattern="(#[A-Za-z0-9]{1,})(,\s*#[A-Za-z0-9]{1,})*"></input>
+            </p>
+            <br>
+        </fieldset>
+        <p>
+        <h4>2. Does this Tweet indicate civil or political unrest, frustration, or dissatisfaction? For example, dissatisfaction with government policy, economic situation, etc.
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q2Example)</script>
+            </crowd-modal>
+        </h4>
+            <input type="radio" id="unrest_a6" name="unrest6" value="yes" required>
+            <label for="unrest_a6">Yes</label>
+            <input type="radio" id="unrest_b6" name="unrest6" value="no">
+            <label for="unrest_b6">No</label>
+        </p>
+    </div>
+
+    <br>
+    <br>
+    <hr style="height:2px;border-width:0;color:gray;background-color:gray">
+    <br>
+    <br>
+
+    <div id="tweet7" class="tabcontent">
+        <h2><u>Tweet #7</u></h2>
+        <h3>Read the following tweet and answer the questions below:</h3>
+        <crowd-card>
+            <div class="tweetcard">
+                ${tweet7}
+            </div>
+        </crowd-card>
+        <br>
+
+        <p>
+        <i>Some questions may remain inactive depending on your responses</i>
+
+        <h4>1. Does this Tweet discuss a protest, march, riot, or strike?
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q1Example);</script>
+            </crowd-modal>
+
+
+        </h4>
+            <input type="radio" id="is_event_a7" name="is_event7" value="specific" onclick="fadeSection('specific', '7');" required>
+            <label for="is_event_a7">Yes, a specific event</label>
+            <input type="radio" id="is_event_b7" name="is_event7" value="nonspecific" onclick="fadeSection('nonspecific', '7');">
+            <label for="is_event_b7">Yes, in a non-specific fashion</label>
+            <input type="radio" id="is_event_c7" name="is_event7" value="no" onclick="fadeSection('no', '7');">
+            <label for="is_event_c7">No / Uses a keyword (protest/riot/etc) with an alternative meaning</label>
+            <input type="radio" id="is_event_d7" name="is_event7" value="notenglish" onclick="fadeSection('notenglish', '7');">
+            <label for="is_event_d7">Not English</label>
+        </p>
+        <br>
+        <fieldset id="only_if_specific7" disabled class="fadedClass">
+            <p>
+            <h4>1a. At the time of this Tweet, is the referenced event current, in the past, or upcoming?
+                <br>
+                &ensp;&nbsp;
+                <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1aExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="timing_a7" name="timing7" value="current" required>
+                <label for="timing_a7">Current event (includes ambiguous news-style headlines)</label>
+                <input type="radio" id="timing_b7" name="timing7" value="past">
+                <label for="timing_b7">Past event</label>
+                <input type="radio" id="timing_c7" name="timing7" value="future">
+                <label for="timing_c7">Upcoming event</label>
+            </p>
+            <br>
+        </fieldset>
+        <fieldset id="only_if_event7" disabled class="fadedClass">
+            <p>
+            <h4>1b. Does this Tweet support or oppose the event in question?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1bExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="sentiment_a7" name="sentiment7" value="support" required>
+                <label for="sentiment_a7">Support</label>
+                <input type="radio" id="sentiment_b7" name="sentiment7" value="oppose">
+                <label for="sentiment_b7">Oppose</label>
+                <input type="radio" id="sentiment_c7" name="sentiment7" value="neither">
+                <label for="sentiment_c7">Neither</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1c. Does this Tweet state a specific topic of the event that reflects the intent of the protestors?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1cExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="topic_a7" name="topic7" value="yes" required>
+                <label for="topic_a7">Yes</label>
+                <input type="radio" id="topic_b7" name="topic7" value="no">
+                <label for="topic_b7">No</label>
+                <input type="radio" id="topic_c7" name="topic7" value="unclear">
+                <label for="topic_c7">Unclear</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1d. Does this Tweet describe participation/intent to participate in the event?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1dExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="participation_a7" name="particiation7" value="yes" required>
+                <label for="participation_a7">In attedance / Intent to participate / Invitation to participate</label>
+                <input type="radio" id="participation_b7" name="particiation7" value="no">
+                <label for="participation_b7">Specifically NOT attending</label>
+                <input type="radio" id="participation_c7" name="particiation7" value="neither">
+                <label for="participation_c7">Neither</label>
+                </p>
+            <br>
+            <br>
+            <p>
+            <h4>1e. If this Tweet contains hashtags specific to the event, list the hashtags:
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1eExample)</script>
+                </crowd-modal>
+            </h4>
+                Please enter as "#hashtag1, #hashtag2,..."
+                <br>
+                <input type="text" id="hashtag7" name="hashtag7" placeholder="#hashtag1, #hashtag2,..." pattern="(#[A-Za-z0-9]{1,})(,\s*#[A-Za-z0-9]{1,})*"></input>
+            </p>
+            <br>
+        </fieldset>
+        <p>
+        <h4>2. Does this Tweet indicate civil or political unrest, frustration, or dissatisfaction? For example, dissatisfaction with government policy, economic situation, etc.
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q2Example)</script>
+            </crowd-modal>
+        </h4>
+            <input type="radio" id="unrest_a7" name="unrest7" value="yes" required>
+            <label for="unrest_a7">Yes</label>
+            <input type="radio" id="unrest_b7" name="unrest7" value="no">
+            <label for="unrest_b7">No</label>
+        </p>
+    </div>
+
+    <br>
+    <br>
+    <hr style="height:2px;border-width:0;color:gray;background-color:gray">
+    <br>
+    <br>
+
+    <div id="tweet8" class="tabcontent">
+        <h2><u>Tweet #8</u></h2>
+        <h3>Read the following tweet and answer the questions below:</h3>
+        <crowd-card>
+            <div class="tweetcard">
+                ${tweet8}
+            </div>
+        </crowd-card>
+        <br>
+
+        <p>
+        <i>Some questions may remain inactive depending on your responses</i>
+
+        <h4>1. Does this Tweet discuss a protest, march, riot, or strike?
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q1Example);</script>
+            </crowd-modal>
+
+
+        </h4>
+            <input type="radio" id="is_event_a8" name="is_event8" value="specific" onclick="fadeSection('specific', '8');" required>
+            <label for="is_event_a8">Yes, a specific event</label>
+            <input type="radio" id="is_event_b8" name="is_event8" value="nonspecific" onclick="fadeSection('nonspecific', '8');">
+            <label for="is_event_b8">Yes, in a non-specific fashion</label>
+            <input type="radio" id="is_event_c8" name="is_event8" value="no" onclick="fadeSection('no', '8');">
+            <label for="is_event_c8">No / Uses a keyword (protest/riot/etc) with an alternative meaning</label>
+            <input type="radio" id="is_event_d8" name="is_event8" value="notenglish" onclick="fadeSection('notenglish', '8');">
+            <label for="is_event_d8">Not English</label>
+        </p>
+        <br>
+        <fieldset id="only_if_specific8" disabled class="fadedClass">
+            <p>
+            <h4>1a. At the time of this Tweet, is the referenced event current, in the past, or upcoming?
+                <br>
+                &ensp;&nbsp;
+                <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1aExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="timing_a8" name="timing8" value="current" required>
+                <label for="timing_a8">Current event (includes ambiguous news-style headlines)</label>
+                <input type="radio" id="timing_b8" name="timing8" value="past">
+                <label for="timing_b8">Past event</label>
+                <input type="radio" id="timing_c8" name="timing8" value="future">
+                <label for="timing_c8">Upcoming event</label>
+            </p>
+            <br>
+        </fieldset>
+        <fieldset id="only_if_event8" disabled class="fadedClass">
+            <p>
+            <h4>1b. Does this Tweet support or oppose the event in question?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1bExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="sentiment_a8" name="sentiment8" value="support" required>
+                <label for="sentiment_a8">Support</label>
+                <input type="radio" id="sentiment_b8" name="sentiment8" value="oppose">
+                <label for="sentiment_b8">Oppose</label>
+                <input type="radio" id="sentiment_c8" name="sentiment8" value="neither">
+                <label for="sentiment_c8">Neither</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1c. Does this Tweet state a specific topic of the event that reflects the intent of the protestors?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1cExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="topic_a8" name="topic8" value="yes" required>
+                <label for="topic_a8">Yes</label>
+                <input type="radio" id="topic_b8" name="topic8" value="no">
+                <label for="topic_b8">No</label>
+                <input type="radio" id="topic_c8" name="topic8" value="unclear">
+                <label for="topic_c8">Unclear</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1d. Does this Tweet describe participation/intent to participate in the event?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1dExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="participation_a8" name="particiation8" value="yes" required>
+                <label for="participation_a8">In attedance / Intent to participate / Invitation to participate</label>
+                <input type="radio" id="participation_b8" name="particiation8" value="no">
+                <label for="participation_b8">Specifically NOT attending</label>
+                <input type="radio" id="participation_c8" name="particiation8" value="neither">
+                <label for="participation_c8">Neither</label>
+                </p>
+            <br>
+            <br>
+            <p>
+            <h4>1e. If this Tweet contains hashtags specific to the event, list the hashtags:
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1eExample)</script>
+                </crowd-modal>
+            </h4>
+                Please enter as "#hashtag1, #hashtag2,..."
+                <br>
+                <input type="text" id="hashtag8" name="hashtag8" placeholder="#hashtag1, #hashtag2,..." pattern="(#[A-Za-z0-9]{1,})(,\s*#[A-Za-z0-9]{1,})*"></input>
+            </p>
+            <br>
+        </fieldset>
+        <p>
+        <h4>2. Does this Tweet indicate civil or political unrest, frustration, or dissatisfaction? For example, dissatisfaction with government policy, economic situation, etc.
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q2Example)</script>
+            </crowd-modal>
+        </h4>
+            <input type="radio" id="unrest_a8" name="unrest8" value="yes" required>
+            <label for="unrest_a8">Yes</label>
+            <input type="radio" id="unrest_b8" name="unrest8" value="no">
+            <label for="unrest_b8">No</label>
+        </p>
+    </div>
+
+    <br>
+    <br>
+    <hr style="height:2px;border-width:0;color:gray;background-color:gray">
+    <br>
+    <br>
+
+    <div id="tweet9" class="tabcontent">
+        <h2><u>Tweet #9</u></h2>
+        <h3>Read the following tweet and answer the questions below:</h3>
+        <crowd-card>
+            <div class="tweetcard">
+                ${tweet9}
+            </div>
+        </crowd-card>
+        <br>
+
+        <p>
+        <i>Some questions may remain inactive depending on your responses</i>
+
+        <h4>1. Does this Tweet discuss a protest, march, riot, or strike?
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q1Example);</script>
+            </crowd-modal>
+
+
+        </h4>
+            <input type="radio" id="is_event_a9" name="is_event9" value="specific" onclick="fadeSection('specific', '9');" required>
+            <label for="is_event_a9">Yes, a specific event</label>
+            <input type="radio" id="is_event_b9" name="is_event9" value="nonspecific" onclick="fadeSection('nonspecific', '9');">
+            <label for="is_event_b9">Yes, in a non-specific fashion</label>
+            <input type="radio" id="is_event_c9" name="is_event9" value="no" onclick="fadeSection('no', '9');">
+            <label for="is_event_c9">No / Uses a keyword (protest/riot/etc) with an alternative meaning</label>
+            <input type="radio" id="is_event_d9" name="is_event9" value="notenglish" onclick="fadeSection('notenglish', '9');">
+            <label for="is_event_d9">Not English</label>
+        </p>
+        <br>
+        <fieldset id="only_if_specific9" disabled class="fadedClass">
+            <p>
+            <h4>1a. At the time of this Tweet, is the referenced event current, in the past, or upcoming?
+                <br>
+                &ensp;&nbsp;
+                <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1aExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="timing_a9" name="timing9" value="current" required>
+                <label for="timing_a9">Current event (includes ambiguous news-style headlines)</label>
+                <input type="radio" id="timing_b9" name="timing9" value="past">
+                <label for="timing_b9">Past event</label>
+                <input type="radio" id="timing_c9" name="timing9" value="future">
+                <label for="timing_c9">Upcoming event</label>
+            </p>
+            <br>
+        </fieldset>
+        <fieldset id="only_if_event9" disabled class="fadedClass">
+            <p>
+            <h4>1b. Does this Tweet support or oppose the event in question?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1bExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="sentiment_a9" name="sentiment9" value="support" required>
+                <label for="sentiment_a9">Support</label>
+                <input type="radio" id="sentiment_b9" name="sentiment9" value="oppose">
+                <label for="sentiment_b9">Oppose</label>
+                <input type="radio" id="sentiment_c9" name="sentiment9" value="neither">
+                <label for="sentiment_c9">Neither</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1c. Does this Tweet state a specific topic of the event that reflects the intent of the protestors?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1cExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="topic_a9" name="topic9" value="yes" required>
+                <label for="topic_a9">Yes</label>
+                <input type="radio" id="topic_b9" name="topic9" value="no">
+                <label for="topic_b9">No</label>
+                <input type="radio" id="topic_c9" name="topic9" value="unclear">
+                <label for="topic_c9">Unclear</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1d. Does this Tweet describe participation/intent to participate in the event?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1dExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="participation_a9" name="particiation9" value="yes" required>
+                <label for="participation_a9">In attedance / Intent to participate / Invitation to participate</label>
+                <input type="radio" id="participation_b9" name="particiation9" value="no">
+                <label for="participation_b9">Specifically NOT attending</label>
+                <input type="radio" id="participation_c9" name="particiation9" value="neither">
+                <label for="participation_c9">Neither</label>
+                </p>
+            <br>
+            <br>
+            <p>
+            <h4>1e. If this Tweet contains hashtags specific to the event, list the hashtags:
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1eExample)</script>
+                </crowd-modal>
+            </h4>
+                Please enter as "#hashtag1, #hashtag2,..."
+                <br>
+                <input type="text" id="hashtag9" name="hashtag9" placeholder="#hashtag1, #hashtag2,..." pattern="(#[A-Za-z0-9]{1,})(,\s*#[A-Za-z0-9]{1,})*"></input>
+            </p>
+            <br>
+        </fieldset>
+        <p>
+        <h4>2. Does this Tweet indicate civil or political unrest, frustration, or dissatisfaction? For example, dissatisfaction with government policy, economic situation, etc.
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q2Example)</script>
+            </crowd-modal>
+        </h4>
+            <input type="radio" id="unrest_a9" name="unrest9" value="yes" required>
+            <label for="unrest_a9">Yes</label>
+            <input type="radio" id="unrest_b9" name="unrest9" value="no">
+            <label for="unrest_b9">No</label>
+        </p>
+    </div>
+
+    <br>
+    <br>
+    <hr style="height:2px;border-width:0;color:gray;background-color:gray">
+    <br>
+    <br>
+
+    <div id="tweet10" class="tabcontent">
+        <h2><u>Tweet #10</u></h2>
+        <h3>Read the following tweet and answer the questions below:</h3>
+        <crowd-card>
+            <div class="tweetcard">
+                ${tweet10}
+            </div>
+        </crowd-card>
+        <br>
+
+        <p>
+        <i>Some questions may remain inactive depending on your responses</i>
+
+        <h4>1. Does this Tweet discuss a protest, march, riot, or strike?
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q1Example);</script>
+            </crowd-modal>
+
+
+        </h4>
+            <input type="radio" id="is_event_a10" name="is_event10" value="specific" onclick="fadeSection('specific', '10');" required>
+            <label for="is_event_a10">Yes, a specific event</label>
+            <input type="radio" id="is_event_b10" name="is_event10" value="nonspecific" onclick="fadeSection('nonspecific', '10');">
+            <label for="is_event_b10">Yes, in a non-specific fashion</label>
+            <input type="radio" id="is_event_c10" name="is_event10" value="no" onclick="fadeSection('no', '10');">
+            <label for="is_event_c10">No / Uses a keyword (protest/riot/etc) with an alternative meaning</label>
+            <input type="radio" id="is_event_d10" name="is_event10" value="notenglish" onclick="fadeSection('notenglish', '10');">
+            <label for="is_event_d10">Not English</label>
+        </p>
+        <br>
+        <fieldset id="only_if_specific10" disabled class="fadedClass">
+            <p>
+            <h4>1a. At the time of this Tweet, is the referenced event current, in the past, or upcoming?
+                <br>
+                &ensp;&nbsp;
+                <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1aExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="timing_a10" name="timing10" value="current" required>
+                <label for="timing_a10">Current event (includes ambiguous news-style headlines)</label>
+                <input type="radio" id="timing_b10" name="timing10" value="past">
+                <label for="timing_b10">Past event</label>
+                <input type="radio" id="timing_c10" name="timing10" value="future">
+                <label for="timing_c10">Upcoming event</label>
+            </p>
+            <br>
+        </fieldset>
+        <fieldset id="only_if_event10" disabled class="fadedClass">
+            <p>
+            <h4>1b. Does this Tweet support or oppose the event in question?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1bExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="sentiment_a10" name="sentiment10" value="support" required>
+                <label for="sentiment_a10">Support</label>
+                <input type="radio" id="sentiment_b10" name="sentiment10" value="oppose">
+                <label for="sentiment_b10">Oppose</label>
+                <input type="radio" id="sentiment_c10" name="sentiment10" value="neither">
+                <label for="sentiment_c10">Neither</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1c. Does this Tweet state a specific topic of the event that reflects the intent of the protestors?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1cExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="topic_a10" name="topic10" value="yes" required>
+                <label for="topic_a10">Yes</label>
+                <input type="radio" id="topic_b10" name="topic10" value="no">
+                <label for="topic_b10">No</label>
+                <input type="radio" id="topic_c10" name="topic10" value="unclear">
+                <label for="topic_c10">Unclear</label>
+            </p>
+            <br>
+            <br>
+            <p>
+            <h4>1d. Does this Tweet describe participation/intent to participate in the event?
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1dExample)</script>
+                </crowd-modal>
+            </h4>
+                <input type="radio" id="participation_a10" name="particiation10" value="yes" required>
+                <label for="participation_a10">In attedance / Intent to participate / Invitation to participate</label>
+                <input type="radio" id="participation_b10" name="particiation10" value="no">
+                <label for="participation_b10">Specificall NOT attending</label>
+                <input type="radio" id="participation_c10" name="particiation10" value="neither">
+                <label for="participation_c10">Neither</label>
+                </p>
+            <br>
+            <br>
+            <p>
+            <h4>1e. If this Tweet contains hashtags specific to the event, list the hashtags:
+                <br>
+                &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                    <script>document.write(q1eExample)</script>
+                </crowd-modal>
+            </h4>
+                Please enter as "#hashtag1, #hashtag2,..."
+                <br>
+                <input type="text" id="hashtag10" name="hashtag10" placeholder="#hashtag1, #hashtag2,..." pattern="(#[A-Za-z0-9]{1,})(,\s*#[A-Za-z0-9]{1,})*"></input>
+            </p>
+            <br>
+        </fieldset>
+        <p>
+        <h4>2. Does this Tweet indicate civil or political unrest, frustration, or dissatisfaction? For example, dissatisfaction with government policy, economic situation, etc.
+            <br>
+            &ensp;&nbsp;
+            <crowd-modal class="example" link-text = "See Examples" link-type = "link" style="font-weight: normal;">
+                <script>document.write(q2Example)</script>
+            </crowd-modal>
+        </h4>
+            <input type="radio" id="unrest_a10" name="unrest10" value="yes" required>
+            <label for="unrest_a10">Yes</label>
+            <input type="radio" id="unrest_b10" name="unrest10" value="no">
+            <label for="unrest_b10">No</label>
+        </p>
+        <br>
+        <br>
+    </div>
+
+</crowd-form>
+</body>
+</html>
+
+<!------------------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+<!-- Style ---------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+<!------------------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+
+<style type="text/css">
+
+crowd-card {
+    width: 100%;
+    border: 1px;
+    border-style: solid;
+    border-color: #1f89ed;
+    background-color: #f0fbff
+}
+
+.tweetcard {
+    font-size: 20px;
+    padding: 12px 12px;
+    margin: 12px;
+}
+
+.faded {
+    font-weight: normal;
+    color: #D3D3D3;
+}
+
+.fadedClass
+{
+    background-color: white;
+    filter:alpha(opacity=50); /* IE */
+    opacity: 0.5; /* Safari, Opera */
+    -moz-opacity:0.50; /* FireFox */
+    z-index: 20;
+}
+
+.activeClass
+{
+    background-color: white;
+    filter:alpha(opacity=100); /* IE */
+    opacity: 1.0; /* Safari, Opera */
+    -moz-opacity:1.00; /* FireFox */
+    z-index: 20;
+}
+
+.card {
+    margin: 10px;
+}
+
+.example {
+    width: 50%;
+}
+
+input[type=text] {
+  width: 50%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+hr {
+    height:2px;
+    border-width:0;
+    color:gray;
+    background-color:gray;
+}
+
+</style>
