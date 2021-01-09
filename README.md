@@ -26,12 +26,12 @@ Note: these scripts handle both the general ngram and civil unrest-related keywo
 
 **BERTweet model**
 
-This model was not included in the final paper and is still being improved. Currently achieves an F1 of 0.677.
+This model was not included in the final paper and is still being improved. Currently achieves an F1 of 0.814.
 
 * Code: `bertweet_model.py`
 * Run settings: `run_bertweet_model.sh`
 
-Note: requires a GPU to run.
+Note: Using a GPU for BERTweet is highly recommended
 
 ---
 
